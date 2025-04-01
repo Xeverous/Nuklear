@@ -11,7 +11,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 	LIBS = -lSDL2 -framework OpenGLES -lm
 else
-	LIBS = -lSDL2 -lGLESv2 -lm
+	LIBS = -L/usr/local/lib -lSDL2 -lGLESv2 -lm
 endif
 
 $(BIN): prepare

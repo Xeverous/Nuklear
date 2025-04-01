@@ -20,7 +20,7 @@
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_IMPLEMENTATION
 #define NK_SDL_RENDERER_IMPLEMENTATION
-#include "../../nuklear.h"
+#include "../../../nuklear.h"
 #include "nuklear_sdl_renderer.h"
 
 #define WINDOW_WIDTH 1200
@@ -51,22 +51,22 @@
 #endif
 
 #ifdef INCLUDE_STYLE
-  #include "../../demo/common/style.c"
+  #include "../../../demo/common/style.c"
 #endif
 #ifdef INCLUDE_CALCULATOR
-  #include "../../demo/common/calculator.c"
+  #include "../../../demo/common/calculator.c"
 #endif
 #ifdef INCLUDE_CANVAS
-  #include "../../demo/common/canvas.c"
+  #include "../../../demo/common/canvas.c"
 #endif
 #ifdef INCLUDE_OVERVIEW
-  #include "../../demo/common/overview.c"
+  #include "../../../demo/common/overview.c"
 #endif
 #ifdef INCLUDE_CONFIGURATOR
-  #include "../../demo/common/style_configurator.c"
+  #include "../../../demo/common/style_configurator.c"
 #endif
 #ifdef INCLUDE_NODE_EDITOR
-  #include "../../demo/common/node_editor.c"
+  #include "../../../demo/common/node_editor.c"
 #endif
 
 /* ===============================================================
@@ -84,8 +84,13 @@ main(void)
     int flags = 0;
     float font_scale = 1;
 
+    // XXX add variables if missing, remove global sdl object
+    struct nk_sdl_device ogl;
+    struct nk_font_atlas atlas;
+    Uint64 time_of_last_frame;
+
     /* GUI */
-    struct nk_context *ctx;
+    struct nk_context ctx;
     struct nk_colorf bg;
 
     #ifdef INCLUDE_CONFIGURATOR
@@ -156,7 +161,7 @@ main(void)
         /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyClean.ttf", 12 * font_scale, &config);*/
         /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyTiny.ttf", 10 * font_scale, &config);*/
         /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Cousine-Regular.ttf", 13 * font_scale, &config);*/
-        nk_sdl_font_stash_end();
+        nk_sdl_font_stash_end(nk_handle_ptr(ogl.font_tex));
 
         /* this hack makes the font appear to be scaled down to the desired
          * size and is only necessary when font_scale > 1 */
@@ -175,7 +180,7 @@ main(void)
             if (evt.type == SDL_QUIT) goto cleanup;
             nk_sdl_handle_event(&evt);
         }
-        nk_sdl_handle_grab(); /* optional grabbing behavior */
+        nk_sdl_handle_grab(ctx, win); /* optional grabbing behavior */
         nk_input_end(ctx);
 
         /* GUI */
