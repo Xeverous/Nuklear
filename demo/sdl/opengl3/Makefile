@@ -15,7 +15,7 @@ else
 	ifeq ($(UNAME_S),Darwin)
 		LIBS = -lSDL2 -framework OpenGL -lm -lGLEW
 	else
-		LIBS = -lSDL2 -lGL -lm -lGLU -lGLEW
+		LIBS = -L/usr/local/lib -lSDL2 -lGL -lm -lGLU -lGLEW
 	endif
 endif
 
