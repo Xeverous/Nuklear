@@ -45,17 +45,6 @@ struct nk_sdl_vertex {
     nk_byte col[4];
 };
 
-NK_INTERN void
-nk_sdl_device_upload_atlas(GLuint *font_tex, const void *image, int width, int height)
-{
-    glGenTextures(1, font_tex);
-    glBindTexture(GL_TEXTURE_2D, *font_tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)width, (GLsizei)height, 0,
-                GL_RGBA, GL_UNSIGNED_BYTE, image);
-}
-
 NK_API void
 nk_sdl_render(struct nk_context *ctx, struct nk_buffer *cmds, struct nk_draw_null_texture *tex_null, SDL_Window *win, enum nk_anti_aliasing AA, Uint64 *time_of_last_frame)
 {

@@ -9,7 +9,6 @@
 #include <limits.h>
 #include <time.h>
 
-#include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
@@ -21,15 +20,12 @@
 #define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_IMPLEMENTATION
-#define NK_SDL_GL3_IMPLEMENTATION
-#include "../../nuklear.h"
-#include "nuklear_sdl_gl3.h"
+#define NK_SDL_GL2_IMPLEMENTATION
+#include "../../../nuklear.h"
+#include "nuklear_sdl_gl2.h"
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
-
-#define MAX_VERTEX_MEMORY 512 * 1024
-#define MAX_ELEMENT_MEMORY 128 * 1024
 
 /* ===============================================================
  *
@@ -56,22 +52,22 @@
 #endif
 
 #ifdef INCLUDE_STYLE
-  #include "../../demo/common/style.c"
+  #include "../../../demo/common/style.c"
 #endif
 #ifdef INCLUDE_CALCULATOR
-  #include "../../demo/common/calculator.c"
+  #include "../../../demo/common/calculator.c"
 #endif
 #ifdef INCLUDE_CANVAS
-  #include "../../demo/common/canvas.c"
+  #include "../../../demo/common/canvas.c"
 #endif
 #ifdef INCLUDE_OVERVIEW
-  #include "../../demo/common/overview.c"
+  #include "../../../demo/common/overview.c"
 #endif
 #ifdef INCLUDE_CONFIGURATOR
-  #include "../../demo/common/style_configurator.c"
+  #include "../../../demo/common/style_configurator.c"
 #endif
 #ifdef INCLUDE_NODE_EDITOR
-  #include "../../demo/common/node_editor.c"
+  #include "../../../demo/common/node_editor.c"
 #endif
 
 /* ===============================================================
@@ -79,10 +75,13 @@
  *                          DEMO
  *
  * ===============================================================*/
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
     /* Platform */
-    struct nk_sdl_device dev;
+    struct nk_buffer cmds;
+    struct nk_draw_null_texture tex_null;
+    GLuint font_tex;
     struct nk_font_atlas atlas;
     Uint64 time_of_last_frame;
     SDL_Window *win;
@@ -104,27 +103,20 @@ int main(int argc, char *argv[])
 
     /* SDL setup */
     SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
-    SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER|SDL_INIT_EVENTS);
-    SDL_GL_SetAttribute (SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-    SDL_GL_SetAttribute (SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_Init(SDL_INIT_VIDEO);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
     win = SDL_CreateWindow("Demo",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
     glContext = SDL_GL_CreateContext(win);
     SDL_GetWindowSize(win, &win_width, &win_height);
 
-    /* OpenGL setup */
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-    glewExperimental = 1;
-    if (glewInit() != GLEW_OK) {
-        fprintf(stderr, "Failed to setup GLEW\n");
-        exit(1);
-    }
-
-    nk_sdl_init(&ctx, &dev, &time_of_last_frame);
+    /* GUI */
+    nk_sdl_init(&ctx, &cmds, &time_of_last_frame);
     /* Load Fonts: if none of these are loaded a default font will be used  */
     /* Load Cursor: if you uncomment cursor loading please hide the cursor */
     {nk_sdl_font_stash_begin(&atlas);
@@ -134,23 +126,9 @@ int main(int argc, char *argv[])
     /*struct nk_font *clean = nk_font_atlas_add_from_file(&atlas, "../../../extra_font/ProggyClean.ttf", 12, 0);*/
     /*struct nk_font *tiny = nk_font_atlas_add_from_file(&atlas, "../../../extra_font/ProggyTiny.ttf", 10, 0);*/
     /*struct nk_font *cousine = nk_font_atlas_add_from_file(&atlas, "../../../extra_font/Cousine-Regular.ttf", 13, 0);*/
-    nk_sdl_font_stash_end(&ctx, &atlas, &dev.tex_null, &dev.font_tex);
+    nk_sdl_font_stash_end(&ctx, &atlas, &tex_null, &font_tex);
     /*nk_style_load_all_cursors(&ctx, atlas.cursors);*/
-    /*nk_style_set_font(&ctx, &roboto->handle);*/}
-
-    /* style.c */
-    #ifdef INCLUDE_STYLE
-    /* ease regression testing during Nuklear release process; not needed for anything else */
-    #ifdef STYLE_WHITE
-    set_style(ctx, THEME_WHITE);
-    #elif defined(STYLE_RED)
-    set_style(ctx, THEME_RED);
-    #elif defined(STYLE_BLUE)
-    set_style(ctx, THEME_BLUE);
-    #elif defined(STYLE_DARK)
-    set_style(ctx, THEME_DARK);
-    #endif
-    #endif
+    /*nk_style_set_font(&ctx, &roboto->handle)*/;}
 
     bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
     while (running)
@@ -176,11 +154,11 @@ int main(int argc, char *argv[])
 
             nk_layout_row_static(&ctx, 30, 80, 1);
             if (nk_button_label(&ctx, "button"))
-                printf("button pressed!\n");
+                fprintf(stdout, "button pressed\n");
             nk_layout_row_dynamic(&ctx, 30, 2);
             if (nk_option_label(&ctx, "easy", op == EASY)) op = EASY;
             if (nk_option_label(&ctx, "hard", op == HARD)) op = HARD;
-            nk_layout_row_dynamic(&ctx, 22, 1);
+            nk_layout_row_dynamic(&ctx, 25, 1);
             nk_property_int(&ctx, "Compression:", 0, &property, 100, 10, 1);
 
             nk_layout_row_dynamic(&ctx, 20, 1);
@@ -227,12 +205,12 @@ int main(int argc, char *argv[])
          * defaults everything back into a default state.
          * Make sure to either a.) save and restore or b.) reset your own state after
          * rendering the UI. */
-        nk_sdl_render(&ctx, &dev, win, NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY, &time_of_last_frame);
+        nk_sdl_render(&ctx, &cmds, &tex_null, win, NK_ANTI_ALIASING_ON, &time_of_last_frame);
         SDL_GL_SwapWindow(win);
     }
 
 cleanup:
-    nk_sdl_shutdown(&ctx, &atlas, &dev);
+    nk_sdl_shutdown(&ctx, &atlas, &cmds, font_tex);
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(win);
     SDL_Quit();
